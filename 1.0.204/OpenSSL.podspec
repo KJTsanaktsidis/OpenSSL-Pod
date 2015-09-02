@@ -14,6 +14,7 @@ Pod::Spec.new do |s|
   s.prepare_command = <<-CMD
     VERSION="1.0.2d"
     SDKVERSION=`xcrun --sdk iphoneos --show-sdk-version 2> /dev/null`
+    MIN_SDKVERSION="8.0"
 
     BASEPATH="${PWD}"
     CURRENTPATH="/tmp/openssl"
@@ -50,19 +51,19 @@ Pod::Spec.new do |s|
       echo "Building openssl-${VERSION} for ${PLATFORM} ${SDKVERSION} ${ARCH}"
       echo "Please stand by..."
 
-      export CC="${DEVELOPER}/usr/bin/gcc -arch ${ARCH} -miphoneos-version-min=${SDKVERSION}"
+      export CC="${DEVELOPER}/usr/bin/gcc -arch ${ARCH} -miphoneos-version-min=${MIN_SDKVERSION} -fembed-bitcode"
       mkdir -p "${CURRENTPATH}/bin/${PLATFORM}${SDKVERSION}-${ARCH}.sdk"
       LOG="${CURRENTPATH}/bin/${PLATFORM}${SDKVERSION}-${ARCH}.sdk/build-openssl-${VERSION}.log"
 
       LIPO_LIBSSL="${LIPO_LIBSSL} ${CURRENTPATH}/bin/${PLATFORM}${SDKVERSION}-${ARCH}.sdk/lib/libssl.a"
       LIPO_LIBCRYPTO="${LIPO_LIBCRYPTO} ${CURRENTPATH}/bin/${PLATFORM}${SDKVERSION}-${ARCH}.sdk/lib/libcrypto.a"
 
-      ./Configure ${CONFIGURE_FOR} --openssldir="${CURRENTPATH}/bin/${PLATFORM}${SDKVERSION}-${ARCH}.sdk" > "${LOG}" 2>&1
+      ./Configure no-asm ${CONFIGURE_FOR} --openssldir="${CURRENTPATH}/bin/${PLATFORM}${SDKVERSION}-${ARCH}.sdk" | tee > "${LOG}" 2>&1
       sed -ie "s!^CFLAG=!CFLAG=-isysroot ${CROSS_TOP}/SDKs/${CROSS_SDK} !" "Makefile"
 
-      make >> "${LOG}" 2>&1
-      make all install_sw >> "${LOG}" 2>&1
-      make clean >> "${LOG}" 2>&1
+      make | tee >> "${LOG}" 2>&1
+      make all install_sw | tee >> "${LOG}" 2>&1
+      make clean | tee>> "${LOG}" 2>&1
     done
 
 
